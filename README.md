@@ -1,2 +1,2 @@
-# Simulations
-keep simulations codes that i write during my simulations course in university . 
+# Modeling and Simulation
+keep simulation codes that i write during my **Modeling and Simulation** course in university . 
