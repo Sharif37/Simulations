@@ -60,13 +60,11 @@ class Sim:
         self.TotalCustomers = total_customers
         self.NumberOfDepartures = 0
         self.LongService = 0
-       
 
         # Event list and queue
         self.FutureEventList = EventList()
         self.Customers = Queue()
-
-        # Simulation time limit (60 hours = 3600 minutes)
+        
         self.SimulationTimeLimit = 3600.0
 
     def exponential(self, mean):
@@ -82,7 +80,7 @@ class Sim:
 
         departure_time = self.Clock + service_time
         self.FutureEventList.enqueue(Event('departure', departure_time))
-        self.NumberInService = 1 #single server
+        self.NumberInService = 1  # single server
         self.QueueLength -= 1
 
     def process_departure(self, event):
@@ -95,7 +93,6 @@ class Sim:
         else:
             self.NumberInService = 0
 
-        
         response = self.Clock - finished.get_time()
         self.SumResponseTime += response
 
@@ -123,7 +120,8 @@ class Sim:
             self.MaxQueueLength = self.QueueLength
 
         # Schedule the next arrival
-        next_arrival_time = self.Clock + self.exponential(self.MeanInterArrivalTime)
+        next_arrival_time = self.Clock + \
+            self.exponential(self.MeanInterArrivalTime)
         self.FutureEventList.enqueue(Event('arrival', next_arrival_time))
         self.LastEventTime = self.Clock
 
@@ -142,28 +140,42 @@ class Sim:
         print(f"\tSERVER UTILIZATION: {rho:.2f}")
         print(f"\tMAXIMUM LINE LENGTH: {self.MaxQueueLength}")
         print(f"\tAVERAGE RESPONSE TIME: {avg_response:.2f} MINUTES")
-        print(f"\tPROPORTION WHO SPEND FOUR MINUTES OR MORE IN SYSTEM: {proportion_long_service:.2f}")
+        print(
+            f"\tPROPORTION WHO SPEND FOUR MINUTES OR MORE IN SYSTEM: {proportion_long_service:.2f}")
         print(f"\tSIMULATION RUN LENGTH: {self.Clock:.2f} MINUTES")
         print(f"\tNUMBER OF DEPARTURES: {self.NumberOfDepartures}")
-      
 
     def run_simulation(self):
-        # Initialize the simulation
+        # Initialize the simulation 
         first_arrival_time = self.exponential(self.MeanInterArrivalTime)
         self.FutureEventList.enqueue(Event('arrival', first_arrival_time))
 
-        # Run the simulation until either all customers are served or time limit is reached
-        while self.NumberOfDepartures < self.TotalCustomers and self.Clock <= self.SimulationTimeLimit:
+    # Run the simulation until  the time limit is reached
+        while self.Clock <= self.SimulationTimeLimit :
+            if len(self.FutureEventList.events) == 0:
+                print("No more events to process.")
+                break
+
             event = self.FutureEventList.get_min()
             self.FutureEventList.dequeue()
             self.Clock = event.get_time()
+
+        # If the event time exceeds the 3600 minutes, terminate
+            if self.Clock > self.SimulationTimeLimit:
+                print(f"Time limit of {self.SimulationTimeLimit} minutes reached.")
+                break
 
             if event.get_type() == 'arrival':
                 self.process_arrival(event)
             else:
                 self.process_departure(event)
 
-        # Generate the final report
+    # If time is up but customers are still in the system, clear them out
+        while self.QueueLength > 0 and self.Clock <= self.SimulationTimeLimit:
+            self.schedule_departure()
+            self.NumberOfDepartures += 1
+
+    # Generate the final report
         self.report_generation()
 
 
@@ -174,5 +186,6 @@ if __name__ == "__main__":
     mean_service_time = 3.2
     sigma = 0.6
 
-    sim = Sim(total_customers, mean_interarrival_time, mean_service_time, sigma)
+    sim = Sim(total_customers, mean_interarrival_time,
+              mean_service_time, sigma)
     sim.run_simulation()
